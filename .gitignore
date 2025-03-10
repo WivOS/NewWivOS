@@ -1,0 +1,11 @@
+bin/
+build/
+toolchain/binutils-gdb/
+toolchain/gcc/
+toolchain/build-*/
+sysroot/
+initrd/
+toolchain/freetype-2.13.0/
+toolchain/automake-1.15.1/
+*.dts
+.vscode/
