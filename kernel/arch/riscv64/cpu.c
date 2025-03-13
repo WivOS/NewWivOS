@@ -14,14 +14,21 @@ struct stack_t {
 };
 static struct stack_t CPUStacks[MAX_CPUS] __attribute__((aligned(PAGE_SIZE)));
 
+
 static int cpu_count = 0;
 static void init_cpu(uint64_t hartid) {
     //TODO: Mix processor and hartid
     CPULocals[cpu_count].currentCpu = hartid;
     CPULocals[cpu_count].kernelStack = (volatile size_t)&CPUStacks[cpu_count].stack[CPU_STACK_SIZE];
+    CPULocals[cpu_count].preemptCounter = 0;
     //TODO: User stack
 
     cpu_count++;
+}
+
+static int cpu_is_inited = 0;
+int riscv_cpu_inited() {
+    return cpu_is_inited;
 }
 
 void riscv_cpu_init() {
@@ -40,4 +47,6 @@ void riscv_cpu_init() {
 
         init_cpu(mp_info->hartid);
     }
+
+    cpu_is_inited = 1;
 }

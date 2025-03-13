@@ -11,6 +11,9 @@ This is a rewrite from the newest WivOS dev branch to support both x86_64 and ri
 - [x] Virtual Memory Manager (x86_64 & riscv64)
 - [x] Interrupts (riscv64)
 - [ ] Interrupts (x86_64)
+- [x] Processes/Threads (riscv64)
+- [ ] Processes/Threads (x86_64)
+- [ ] Scheduler (riscv64 & x86_64)
 
 ## x86_64 features
 

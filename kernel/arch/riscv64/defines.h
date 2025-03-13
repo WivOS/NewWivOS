@@ -32,3 +32,5 @@
 #define VMM_FLOBAL (1ULL<<5)
 #define VMM_ACCESSED (1ULL<<6)
 #define VMM_DIRTY (1ULL<<7)
+
+#include <arch/riscv64/int.h>

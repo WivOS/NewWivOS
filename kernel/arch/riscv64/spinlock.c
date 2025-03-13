@@ -1,5 +1,7 @@
 #include <arch/riscv64/arch.h>
 #include <arch/spinlock.h>
+#include <arch/int.h>
+#include <arch/riscv64/cpu.h>
 
 uint32_t locked_read(uint32_t *var) {
     return (uint32_t)__sync_fetch_and_or(var, 0);
@@ -79,17 +81,30 @@ __attribute__((noinline)) __attribute__((unused)) static void deadlock_detect(co
 }
 
 uint32_t spinlock_try_lock_debug(volatile spinlock_debug_t *spinlock, const char *file, const char *func, int line) {
+    int irq_status = arch_disable_interrupts();
+
     uint32_t ret;
     ret = __sync_lock_test_and_set(&spinlock->lock, 1);
     if(!ret) {
         spinlock->last_acquirer.file = file;
         spinlock->last_acquirer.func = func;
         spinlock->last_acquirer.line = line;
+
+        //Disable preemption on this cpu
+        if(riscv_cpu_inited()) get_cpu_struct()->preemptCounter++;
     }
+    if(irq_status) arch_enable_interrupts();
     return ret;
 }
 
 void spinlock_lock_debug(volatile spinlock_debug_t *spinlock, const char *file, const char *func, const char *lockname, int line) {
+    int irq_status = arch_disable_interrupts();
+
+    //Disable preemption on this cpu
+    if(riscv_cpu_inited()) get_cpu_struct()->preemptCounter++;
+
+    if(irq_status) arch_enable_interrupts();
+
 retry:
     for(size_t i = 0; i < DEADLOCK_MAX_ITER; i++)
         if(!spinlock_try_lock_debug(spinlock, file, func, line))
@@ -101,13 +116,36 @@ out:
 }
 
 uint32_t spinlock_try_lock_normal(volatile spinlock_normal_t *spinlock) {
-    return (uint32_t)__sync_lock_test_and_set(&spinlock->lock, 1);
+    int irq_status = arch_disable_interrupts();
+
+    uint32_t value = (uint32_t)__sync_lock_test_and_set(&spinlock->lock, 1);
+
+    if(!value && riscv_cpu_inited()) {
+        //Disable preemption on this cpu
+        get_cpu_struct()->preemptCounter++;
+    }
+    if(irq_status) arch_enable_interrupts();
+    return value;
 }
 
 void spinlock_lock_normal(volatile spinlock_normal_t *spinlock) {
+    int irq_status = arch_disable_interrupts();
+
+    //Disable preemption on this cpu
+    if(riscv_cpu_inited()) get_cpu_struct()->preemptCounter++;
+
+    if(irq_status) arch_enable_interrupts();
+
     while(__sync_lock_test_and_set(&spinlock->lock, 1) != 0);
 }
 
 void spinlock_unlock(volatile spinlock_t *spinlock) {
     __sync_lock_release(&spinlock->lock);
+
+    int irq_status = arch_disable_interrupts();
+
+    //Enable preemption on this cpu
+    if(riscv_cpu_inited()) get_cpu_struct()->preemptCounter--;
+
+    if(irq_status) arch_enable_interrupts();
 }

@@ -30,8 +30,14 @@ void arch_enable_interrupts() {
     csr_write("sstatus", csr_read("sstatus") | SSATUS_SIE);
 }
 
-void arch_disable_interrupts() {
+int arch_disable_interrupts() {
+    uint64_t value = csr_read("sstatus") & (uint64_t)SSATUS_SIE;
     csr_write("sstatus", csr_read("sstatus") & ~(uint64_t)SSATUS_SIE);
+    return value != 0;
+}
+
+int arch_interrupts_enabled() {
+    return (csr_read("sstatus") & (uint64_t)SSATUS_SIE) != 0;
 }
 
 static uint64_t last_timer_event = 0;

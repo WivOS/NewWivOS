@@ -5,7 +5,7 @@ kernel_symbols_start:
     .extern CPULocals
     .align 8
     .quad CPULocals
-    .quad 0x1800
+    .quad 0x2000
     .asciz "CPULocals"
 
     .extern DTBNodes
@@ -65,7 +65,7 @@ kernel_symbols_start:
     .extern arch_disable_interrupts
     .align 8
     .quad arch_disable_interrupts
-    .quad 0x1a
+    .quad 0x22
     .asciz "arch_disable_interrupts"
 
     .extern arch_enable_interrupts
@@ -101,7 +101,7 @@ kernel_symbols_start:
     .extern arch_interrupt_init
     .align 8
     .quad arch_interrupt_init
-    .quad 0x8a
+    .quad 0x8e
     .asciz "arch_interrupt_init"
 
     .extern arch_interrupt_max
@@ -115,6 +115,12 @@ kernel_symbols_start:
     .quad arch_interrupt_min
     .quad 0x12
     .asciz "arch_interrupt_min"
+
+    .extern arch_interrupts_enabled
+    .align 8
+    .quad arch_interrupts_enabled
+    .quad 0x18
+    .asciz "arch_interrupts_enabled"
 
     .extern arch_post_vmm
     .align 8
@@ -539,8 +545,14 @@ kernel_symbols_start:
     .extern riscv_cpu_init
     .align 8
     .quad riscv_cpu_init
-    .quad 0x1b2
+    .quad 0x1f6
     .asciz "riscv_cpu_init"
+
+    .extern riscv_cpu_inited
+    .align 8
+    .quad riscv_cpu_inited
+    .quad 0x18
+    .asciz "riscv_cpu_inited"
 
     .extern riscv_handle_trap
     .align 8
@@ -569,31 +581,31 @@ kernel_symbols_start:
     .extern spinlock_lock_debug
     .align 8
     .quad spinlock_lock_debug
-    .quad 0x6c
+    .quad 0x1b8
     .asciz "spinlock_lock_debug"
 
     .extern spinlock_lock_normal
     .align 8
     .quad spinlock_lock_normal
-    .quad 0x18
+    .quad 0xc2
     .asciz "spinlock_lock_normal"
 
     .extern spinlock_try_lock_debug
     .align 8
     .quad spinlock_try_lock_debug
-    .quad 0x20
+    .quad 0xe8
     .asciz "spinlock_try_lock_debug"
 
     .extern spinlock_try_lock_normal
     .align 8
     .quad spinlock_try_lock_normal
-    .quad 0x16
+    .quad 0xc4
     .asciz "spinlock_try_lock_normal"
 
     .extern spinlock_unlock
     .align 8
     .quad spinlock_unlock
-    .quad 0x18
+    .quad 0xc2
     .asciz "spinlock_unlock"
 
     .extern sprintf
