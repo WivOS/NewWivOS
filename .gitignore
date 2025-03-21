@@ -9,3 +9,5 @@ toolchain/freetype-2.13.0/
 toolchain/automake-1.15.1/
 *.dts
 .vscode/
+
+kernel/symbols.s
