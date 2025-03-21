@@ -2,10 +2,16 @@
 .global kernel_symbols_start
 kernel_symbols_start:
 
+    .extern ActiveTasks
+    .align 8
+    .quad ActiveTasks
+    .quad 0x1000
+    .asciz "ActiveTasks"
+
     .extern CPULocals
     .align 8
     .quad CPULocals
-    .quad 0x2000
+    .quad 0x4000
     .asciz "CPULocals"
 
     .extern DTBNodes
@@ -13,6 +19,12 @@ kernel_symbols_start:
     .quad DTBNodes
     .quad 0x8
     .asciz "DTBNodes"
+
+    .extern EntrySchedulerLock
+    .align 8
+    .quad EntrySchedulerLock
+    .quad 0x20
+    .asciz "EntrySchedulerLock"
 
     .extern KernelPageMap
     .align 8
@@ -25,6 +37,30 @@ kernel_symbols_start:
     .quad MEM_PHYS_OFFSET
     .quad 0x8
     .asciz "MEM_PHYS_OFFSET"
+
+    .extern ProcessTable
+    .align 8
+    .quad ProcessTable
+    .quad 0x800
+    .asciz "ProcessTable"
+
+    .extern SchedulerLock
+    .align 8
+    .quad SchedulerLock
+    .quad 0x20
+    .asciz "SchedulerLock"
+
+    .extern SchedulerRunning
+    .align 8
+    .quad SchedulerRunning
+    .quad 0x1
+    .asciz "SchedulerRunning"
+
+    .extern SecondSchedulerLock
+    .align 8
+    .quad SecondSchedulerLock
+    .quad 0x20
+    .asciz "SecondSchedulerLock"
 
     .extern VmmKernelBase
     .align 8
@@ -55,6 +91,90 @@ kernel_symbols_start:
     .quad _vsnprintf_internal
     .quad 0x786
     .asciz "_vsnprintf_internal"
+
+    .extern arch_cpu_decrement_preempt_counter
+    .align 8
+    .quad arch_cpu_decrement_preempt_counter
+    .quad 0x9a
+    .asciz "arch_cpu_decrement_preempt_counter"
+
+    .extern arch_cpu_get_current_pid
+    .align 8
+    .quad arch_cpu_get_current_pid
+    .quad 0x60
+    .asciz "arch_cpu_get_current_pid"
+
+    .extern arch_cpu_get_current_taskid
+    .align 8
+    .quad arch_cpu_get_current_taskid
+    .quad 0x60
+    .asciz "arch_cpu_get_current_taskid"
+
+    .extern arch_cpu_get_current_tid
+    .align 8
+    .quad arch_cpu_get_current_tid
+    .quad 0x60
+    .asciz "arch_cpu_get_current_tid"
+
+    .extern arch_cpu_get_index
+    .align 8
+    .quad arch_cpu_get_index
+    .quad 0x60
+    .asciz "arch_cpu_get_index"
+
+    .extern arch_cpu_get_preempt_counter
+    .align 8
+    .quad arch_cpu_get_preempt_counter
+    .quad 0x5e
+    .asciz "arch_cpu_get_preempt_counter"
+
+    .extern arch_cpu_get_thread_kernel_stack
+    .align 8
+    .quad arch_cpu_get_thread_kernel_stack
+    .quad 0x5e
+    .asciz "arch_cpu_get_thread_kernel_stack"
+
+    .extern arch_cpu_get_thread_user_stack
+    .align 8
+    .quad arch_cpu_get_thread_user_stack
+    .quad 0x5e
+    .asciz "arch_cpu_get_thread_user_stack"
+
+    .extern arch_cpu_increment_preempt_counter
+    .align 8
+    .quad arch_cpu_increment_preempt_counter
+    .quad 0x9a
+    .asciz "arch_cpu_increment_preempt_counter"
+
+    .extern arch_cpu_set_current_pid
+    .align 8
+    .quad arch_cpu_set_current_pid
+    .quad 0x64
+    .asciz "arch_cpu_set_current_pid"
+
+    .extern arch_cpu_set_current_taskid
+    .align 8
+    .quad arch_cpu_set_current_taskid
+    .quad 0x64
+    .asciz "arch_cpu_set_current_taskid"
+
+    .extern arch_cpu_set_current_tid
+    .align 8
+    .quad arch_cpu_set_current_tid
+    .quad 0x64
+    .asciz "arch_cpu_set_current_tid"
+
+    .extern arch_cpu_set_thread_kernel_stack
+    .align 8
+    .quad arch_cpu_set_thread_kernel_stack
+    .quad 0x64
+    .asciz "arch_cpu_set_thread_kernel_stack"
+
+    .extern arch_cpu_set_thread_user_stack
+    .align 8
+    .quad arch_cpu_set_thread_user_stack
+    .quad 0x64
+    .asciz "arch_cpu_set_thread_user_stack"
 
     .extern arch_debug_printf_function
     .align 8
@@ -127,6 +247,30 @@ kernel_symbols_start:
     .quad arch_post_vmm
     .quad 0x32
     .asciz "arch_post_vmm"
+
+    .extern arch_scheduler_idle
+    .align 8
+    .quad arch_scheduler_idle
+    .quad 0x12
+    .asciz "arch_scheduler_idle"
+
+    .extern arch_scheduler_switch_task
+    .align 8
+    .quad arch_scheduler_switch_task
+    .quad 0x12
+    .asciz "arch_scheduler_switch_task"
+
+    .extern arch_thread_init_regs
+    .align 8
+    .quad arch_thread_init_regs
+    .quad 0x8a
+    .asciz "arch_thread_init_regs"
+
+    .extern arch_thread_set_stack
+    .align 8
+    .quad arch_thread_set_stack
+    .quad 0x4a
+    .asciz "arch_thread_set_stack"
 
     .extern arch_vmm_preinit
     .align 8
@@ -530,6 +674,18 @@ kernel_symbols_start:
     .quad 0x2c
     .asciz "printf_write_char_str"
 
+    .extern process_create
+    .align 8
+    .quad process_create
+    .quad 0x3e6
+    .asciz "process_create"
+
+    .extern process_get_process
+    .align 8
+    .quad process_get_process
+    .quad 0x96
+    .asciz "process_get_process"
+
     .extern riscv64_get_boot_dtb
     .align 8
     .quad riscv64_get_boot_dtb
@@ -571,6 +727,12 @@ kernel_symbols_start:
     .quad riscv_sbicall
     .quad 0x0
     .asciz "riscv_sbicall"
+
+    .extern scheduler_schedule
+    .align 8
+    .quad scheduler_schedule
+    .quad 0x328
+    .asciz "scheduler_schedule"
 
     .extern set_cpu_struct
     .align 8
@@ -691,6 +853,12 @@ kernel_symbols_start:
     .quad strtok_r
     .quad 0xf0
     .asciz "strtok_r"
+
+    .extern thread_create
+    .align 8
+    .quad thread_create
+    .quad 0x3e8
+    .asciz "thread_create"
 
     .extern vmm_init
     .align 8

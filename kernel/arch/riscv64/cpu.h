@@ -1,14 +1,21 @@
 #pragma once
 
 #include <arch/common.h>
+#include <arch/cpu.h>
+#include <tasking/process.h>
+#include <tasking/thread.h>
 
 #define MAX_CPUS 256
 
 typedef struct {
     volatile uint64_t currentCpu;
-    volatile uint64_t userStack;
+    volatile uint64_t threadUserStack;
+    volatile uint64_t threadKernelStack;
     volatile uint64_t kernelStack;
     volatile uint64_t preemptCounter;
+    volatile kpid_t currentPid;
+    volatile ktid_t currentTid;
+    volatile ktid_t currentTaskID;
 } __attribute__((packed)) cpu_t;
 
 extern cpu_t CPULocals[MAX_CPUS];

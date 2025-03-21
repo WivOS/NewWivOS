@@ -11,7 +11,12 @@
 
 #define MAX_FILE_HANDLES 256
 
+#ifndef kpid_t
 typedef size_t kpid_t;
+#endif
+#ifndef ktid_t
+typedef size_t ktid_t;
+#endif
 
 typedef struct process {
     volatile kpid_t pid;

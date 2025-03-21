@@ -1,11 +1,13 @@
 #include <tasking/thread.h>
 #include <tasking/process.h>
+#include <arch/thread.h>
 
 #include <mem/alloc.h>
 #include <mem/pmm.h>
 #include <mem/vmm.h>
 
 #include <utils/string.h>
+#include <utils/system.h>
 
 #define STACK_LOCATION_TOP ((size_t)0x0000800000000000)
 

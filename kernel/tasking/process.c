@@ -1,6 +1,10 @@
 #include <tasking/process.h>
 #include <mem/alloc.h>
 
+#include <utils/system.h>
+
+process_t *ProcessTable[MAX_PROCESSES];
+
 static volatile spinlock_t process_lock;
 
 kpid_t process_create(pt_t *page_table) {

@@ -26,11 +26,11 @@ typedef struct spinlock_normal {
 
 #ifdef _DEBUG_
 
-#define spinlock_t spinlock_debug_t
+typedef spinlock_debug_t spinlock_t;
 
 #else
 
-#define spinlock_t spinlock_normal_t
+typedef spinlock_normal_t spinlock_t;
 
 #endif
 
@@ -62,3 +62,21 @@ void spinlock_unlock(volatile spinlock_t *spinlock);
 #define INIT_SPINLOCK() ((spinlock_t){0})
 
 #endif
+
+void arch_cpu_increment_preempt_counter();
+void arch_cpu_decrement_preempt_counter();
+#define spinlock_try_lock_skippreempt(LOCK) ({ \
+    uint32_t ret = spinlock_try_lock(LOCK); \
+    if(!ret) arch_cpu_decrement_preempt_counter(); \
+    ret; \
+})
+
+#define spinlock_lock_skippreempt(LOCK) ({ \
+    spinlock_lock(LOCK); \
+    arch_cpu_decrement_preempt_counter(); \
+})
+
+#define spinlock_unlock_skippreempt(LOCK) ({ \
+    arch_cpu_increment_preempt_counter(); \
+    spinlock_lock(LOCK); \
+})

@@ -7,9 +7,12 @@
 #include <arch/spinlock.h>
 #include <arch/int.h>
 
-#include <tasking/process.h>
-
+#ifndef kpid_t
+typedef size_t kpid_t;
+#endif
+#ifndef ktid_t
 typedef size_t ktid_t;
+#endif
 
 typedef struct thread {
     volatile irq_regs_t saved_regs;

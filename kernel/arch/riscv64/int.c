@@ -2,6 +2,7 @@
 #include <arch/riscv64/defines.h>
 
 #include <utils/system.h>
+#include <arch/spinlock.h>
 #include <utils/dtb.h>
 #include <arch/riscv64/sbi.h>
 
