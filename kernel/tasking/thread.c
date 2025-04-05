@@ -63,6 +63,7 @@ done: (void)tid;
 
         stack = (void *)(stackBottom + STACK_SIZE - ((sbase - sp) * sizeof(size_t)));
     }
+    printf("%llX\n", stack);
     arch_thread_set_stack(newThread, stack);
 
     process->threads[tid] = newThread;

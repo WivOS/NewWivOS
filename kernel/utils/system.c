@@ -384,3 +384,19 @@ int printf(const char *format, ...) {
 
     return ret;
 }
+
+int printf_scheduler(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    debug_printf_function_t func = (debug_printf_function_t){0};
+    func.write = arch_debug_printf_function;
+
+    spinlock_lock(&PrintLock2);
+    int ret = _vsnprintf_internal(&func, format, args);
+    spinlock_unlock(&PrintLock2);
+
+    va_end(args);
+
+    return ret;
+}

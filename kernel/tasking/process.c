@@ -7,6 +7,14 @@ process_t *ProcessTable[MAX_PROCESSES];
 
 static volatile spinlock_t process_lock;
 
+void process_init_process_table() {
+    spinlock_lock(&process_lock);
+
+    for(kpid_t i = 0; i < MAX_PROCESSES; i++) ProcessTable[i] = (process_t *)NULL;
+
+    spinlock_unlock(&process_lock);
+}
+
 kpid_t process_create(pt_t *page_table) {
     spinlock_lock(&process_lock);
 

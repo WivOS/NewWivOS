@@ -36,9 +36,13 @@ pt_t *vmm_setup_pt() {
     return pt;
 }
 
-#define make_satp(mode, ppn) (((size_t)(mode) << 60) | ((size_t)(ppn) >> 12))
+uint64_t riscv_vmm_create_satp(void *entries) {
+    uint64_t satp = ((uint64_t)(5 + max_level) << 60) | ((uint64_t)entries >> 12);
+    return satp;
+}
+
 void vmm_set_pt(pt_t *pt) {
-    uint64_t satp = ((uint64_t)(5 + max_level) << 60) | ((uint64_t)pt->entries >> 12);
+    uint64_t satp = riscv_vmm_create_satp(pt->entries);
     csr_write("satp", satp);
 }
 

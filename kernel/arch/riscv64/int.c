@@ -5,6 +5,9 @@
 #include <arch/spinlock.h>
 #include <utils/dtb.h>
 #include <arch/riscv64/sbi.h>
+#include <arch/riscv64/cpu.h>
+
+#include <tasking/scheduler.h>
 
 #define INSTRUCTION_ADDR_MIASLIGNED 0
 #define INSTRUCTION_ACCESS_FAULT    1
@@ -26,6 +29,7 @@
 
 #define SSATUS_SIE (1 << 1)
 #define SIE_STIE (1 << 5)
+#define SIE_SSIE (1 << 1)
 
 void arch_enable_interrupts() {
     csr_write("sstatus", csr_read("sstatus") | SSATUS_SIE);
@@ -58,16 +62,48 @@ void arch_interrupt_init() {
     riscv_sbi_set_timer(-1);
 
     //Enable timer interrupts and set timer to trigger at 1000 cycles
-    csr_write("sie", csr_read("sie") | SIE_STIE);
+    csr_write("sie", csr_read("sie") | SIE_STIE | SIE_SSIE);
     last_timer_event = 10000;
     riscv_sbi_set_timer(last_timer_event);
+}
+
+void arch_interrupt_init_smp() {
+    arch_disable_interrupts();
+    csr_write("sscratch", 0); //Remove thread context on the sscratch, we are in kernel
+
+    csr_write("stvec", (uintptr_t)riscv_isr);
+
+    csr_write("sie", csr_read("sie") | SIE_SSIE);
+
+    arch_enable_interrupts();
+}
+
+static void riscv_send_ipi_to_all_harts(uint32_t type) {
+    size_t cpuCount = arch_cpu_get_count();
+    uint64_t maxCpu = arch_cpu_get_maxhartid();
+
+    for(uint64_t base = 0; base <= maxCpu; base += 64) {
+        uint64_t mask = 0;
+        for(size_t i = 0; i < cpuCount; i++) {
+            uint64_t cpu = CPULocals[i].currentCpu;
+            if(cpu >= base && ((int64_t)cpu - (int64_t)base) < 64) {
+                __atomic_store_n(&CPULocals[i].ipiType, type, __ATOMIC_SEQ_CST);
+                mask |= 1 << (cpu - base);
+            }
+        }
+        struct sbiret test = riscv_sbi_send_ipi(mask, base);
+    }
 }
 
 extern void riscv_clear_soft_interrupt();
 static uintptr_t riscv_handle_software_int(irq_regs_t *regs) {
     riscv_clear_soft_interrupt();
 
-    printf("TODO: Software interrupts\n");
+    cpu_t *cpu = get_cpu_struct();
+    uint32_t m = __atomic_fetch_and(&cpu->ipiType, ~(IPI_RESCHEDULE), __ATOMIC_SEQ_CST);
+    if(m & IPI_RESCHEDULE) {
+        scheduler_schedule(regs);
+    }
 
     return (uintptr_t)regs;
 }
@@ -77,7 +113,8 @@ static uintptr_t riscv_handle_timer_int(irq_regs_t *regs) {
     tick_count++;
 
     if((tick_count % 1000) == 0) {
-        printf("Timer 1s elapsed\n");
+        printf("Timer 1s elapsed, sending IPI to test\n");
+        riscv_send_ipi_to_all_harts(IPI_RESCHEDULE);
     }
 
     last_timer_event += 10000;
@@ -100,7 +137,7 @@ static uintptr_t riscv_handle_illegal_instruction(irq_regs_t *regs) {
 }
 
 static uintptr_t riscv_handle_page_fault(irq_regs_t *regs) {
-    printf("Exception: PAGE Fault(addr: 0x%lX, cause: 0x%lX)\n", regs->tval, regs->cause);
+    printf("Exception: PAGE Fault(epc: 0x%lX, addr: 0x%lX, cause: 0x%lX)\n", regs->epc, regs->tval, regs->cause);
 
     return (uintptr_t)regs;
 }

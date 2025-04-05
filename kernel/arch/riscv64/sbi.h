@@ -19,8 +19,13 @@ struct sbiret {
 
 extern struct sbiret riscv_sbicall(int eid, int fid, ...);
 
-#define SBI_EID_TIMER 0x54494D45
+#define SBI_EID_TIMER   0x54494D45
+#define SBI_SEND_IPI    0x00735049
 
 static inline struct sbiret riscv_sbi_set_timer(uint64_t stime_value) {
     return riscv_sbicall(SBI_EID_TIMER, 0, stime_value);
+}
+
+static inline struct sbiret riscv_sbi_send_ipi(uint64_t hart_mask, uint64_t hart_mask_base) {
+    return riscv_sbicall(SBI_SEND_IPI, 0, hart_mask, hart_mask_base);
 }

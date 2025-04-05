@@ -3,6 +3,7 @@
 #include <arch/common.h>
 
 void arch_interrupt_init();
+void arch_interrupt_init_smp();
 
 uint32_t arch_interrupt_max();
 uint32_t arch_interrupt_min();

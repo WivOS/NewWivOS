@@ -5,7 +5,7 @@
 
 #include <utils/system.h>
 
-cpu_t CPULocals[MAX_CPUS];
+volatile cpu_t CPULocals[MAX_CPUS];
 
 #define CPU_STACK_SIZE 16384
 struct stack_t {
@@ -15,20 +15,45 @@ struct stack_t {
 static struct stack_t CPUStacks[MAX_CPUS] __attribute__((aligned(PAGE_SIZE)));
 
 
-static int cpu_count = 0;
+static volatile uint32_t cpu_count = 0;
 static void init_cpu(uint64_t hartid) {
     //TODO: Mix processor and hartid
     CPULocals[cpu_count].currentCpu = hartid;
     CPULocals[cpu_count].kernelStack = (volatile size_t)&CPUStacks[cpu_count].stack[CPU_STACK_SIZE];
     CPULocals[cpu_count].preemptCounter = 0;
+    CPULocals[cpu_count].currentPid = -1;
+    CPULocals[cpu_count].currentTid = -1;
+    CPULocals[cpu_count].currentTaskID = -1;
+    CPULocals[cpu_count].flags = 0;
     //TODO: User stack
 
     cpu_count++;
 }
 
-static int cpu_is_inited = 0;
+static volatile int cpu_is_inited = 0;
+static uint64_t cpu_max_hart_id = 0;
 int riscv_cpu_inited() {
     return cpu_is_inited;
+}
+
+volatile uint64_t ctr = 0;
+void riscv_smp_entry(struct limine_mp_riscv64_info *info) {
+    (void)info;
+
+    vmm_set_pt(KernelPageMap);
+
+    for(int i = 0; i < MAX_CPUS; i++) {
+        if(CPULocals[i].currentCpu == info->hartid) {
+            set_cpu_struct((cpu_t *)&CPULocals[i]);
+            break;
+        }
+    }
+
+    arch_interrupt_init_smp(); //TODO: Maybe wait for BSP Hart to setup interrupt things
+
+    __atomic_fetch_add(&ctr, 1, __ATOMIC_SEQ_CST);
+
+    while(1);
 }
 
 void riscv_cpu_init() {
@@ -39,16 +64,36 @@ void riscv_cpu_init() {
     }
 
     init_cpu(mp_response->bsp_hartid);
-    set_cpu_struct(&CPULocals[0]);
+    CPULocals[0].flags = CPU_FLAG_TIMER;
+    set_cpu_struct((cpu_t *)&CPULocals[0]);
+
+    printf("[CPU] Inited %d\n", mp_response->bsp_hartid);
 
     for(int i = 0; i < mp_response->cpu_count; i++) {
         limine_mp_riscv64_info_t *mp_info = mp_response->cpus[i];
+        if(mp_info->hartid > cpu_max_hart_id) cpu_max_hart_id = mp_info->hartid;
         if(mp_info->hartid == mp_response->bsp_hartid) continue;
 
+        printf("[CPU] Initing %d\n", mp_info->hartid);
         init_cpu(mp_info->hartid);
+
+        uint32_t old_ctr = __atomic_load_n(&ctr, __ATOMIC_SEQ_CST);
+        __atomic_store_n(&mp_info->goto_address, riscv_smp_entry, __ATOMIC_SEQ_CST);
+        while(__atomic_load_n(&ctr, __ATOMIC_SEQ_CST) == old_ctr);
+        printf("[CPU] Inited %d\n", mp_info->hartid);
     }
 
+    printf("%d CPUs inited\n", mp_response->cpu_count);
+
     cpu_is_inited = 1;
+}
+
+size_t arch_cpu_get_count() {
+    return cpu_count;
+}
+
+uint64_t arch_cpu_get_maxhartid() {
+    return cpu_max_hart_id;
 }
 
 size_t arch_cpu_get_index() {

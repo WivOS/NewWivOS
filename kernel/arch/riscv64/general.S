@@ -17,6 +17,15 @@ riscv_clear_soft_interrupt:
     csrc sip, t0
     ret
 
+.global get_kernel_gp
+.type get_kernel_gp,@function
+get_kernel_gp:
+.option push
+.option norelax
+    la a0, __global_pointer$
+.option pop
+    ret
+
     .globl riscv_sbicall
     .type riscv_sbicall, @function
 riscv_sbicall:

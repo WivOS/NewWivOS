@@ -4,11 +4,11 @@
 #include <arch/riscv64/cpu.h>
 
 uint32_t locked_read(uint32_t *var) {
-    return (uint32_t)__sync_fetch_and_or(var, 0);
+    return (uint32_t)atomic_load((atomic_uint_least32_t *)var);
 }
 
 uint32_t locked_write(uint32_t *var, uint32_t value) {
-    return (uint32_t)__sync_val_compare_and_swap(var, *var, value);
+    return (uint32_t)atomic_exchange((atomic_uint_least32_t *)var, value);
 }
 
 uint32_t locked_inc(uint32_t *var) {
@@ -67,6 +67,8 @@ __attribute__((noinline)) __attribute__((unused)) static void deadlock_detect(co
     qemu_debug_puts_urgent(function);
     qemu_debug_puts_urgent("\nline: ");
     __puts_uint(line);
+    qemu_debug_puts_urgent("\ncpu: ");
+    __puts_uint(arch_cpu_get_index());
     qemu_debug_puts_urgent("\n---\nlast acquirer:");
     qemu_debug_puts_urgent("\nfile: ");
     qemu_debug_puts_urgent(lock->last_acquirer.file);
@@ -74,6 +76,8 @@ __attribute__((noinline)) __attribute__((unused)) static void deadlock_detect(co
     qemu_debug_puts_urgent(lock->last_acquirer.func);
     qemu_debug_puts_urgent("\nline: ");
     __puts_uint(lock->last_acquirer.line);
+    qemu_debug_puts_urgent("\ncpu: ");
+    __puts_uint(lock->last_acquirer.cpu);
     qemu_debug_puts_urgent("\n---\nassumed locked after it spun for ");
     __puts_uint(iter);
     qemu_debug_puts_urgent(" iterations\n---\n");
@@ -89,22 +93,16 @@ uint32_t spinlock_try_lock_debug(volatile spinlock_debug_t *spinlock, const char
         spinlock->last_acquirer.file = file;
         spinlock->last_acquirer.func = func;
         spinlock->last_acquirer.line = line;
+        spinlock->last_acquirer.cpu = arch_cpu_get_index();
 
         //Disable preemption on this cpu
-        if(riscv_cpu_inited()) get_cpu_struct()->preemptCounter++;
+        arch_cpu_increment_preempt_counter();
     }
     if(irq_status) arch_enable_interrupts();
     return ret;
 }
 
 void spinlock_lock_debug(volatile spinlock_debug_t *spinlock, const char *file, const char *func, const char *lockname, int line) {
-    int irq_status = arch_disable_interrupts();
-
-    //Disable preemption on this cpu
-    if(riscv_cpu_inited()) get_cpu_struct()->preemptCounter++;
-
-    if(irq_status) arch_enable_interrupts();
-
 retry:
     for(size_t i = 0; i < DEADLOCK_MAX_ITER; i++)
         if(!spinlock_try_lock_debug(spinlock, file, func, line))
@@ -120,9 +118,9 @@ uint32_t spinlock_try_lock_normal(volatile spinlock_normal_t *spinlock) {
 
     uint32_t value = (uint32_t)__sync_lock_test_and_set(&spinlock->lock, 1);
 
-    if(!value && riscv_cpu_inited()) {
+    if(!value) {
         //Disable preemption on this cpu
-        get_cpu_struct()->preemptCounter++;
+        arch_cpu_increment_preempt_counter();
     }
     if(irq_status) arch_enable_interrupts();
     return value;
@@ -132,7 +130,7 @@ void spinlock_lock_normal(volatile spinlock_normal_t *spinlock) {
     int irq_status = arch_disable_interrupts();
 
     //Disable preemption on this cpu
-    if(riscv_cpu_inited()) get_cpu_struct()->preemptCounter++;
+    arch_cpu_increment_preempt_counter();
 
     if(irq_status) arch_enable_interrupts();
 
@@ -140,12 +138,12 @@ void spinlock_lock_normal(volatile spinlock_normal_t *spinlock) {
 }
 
 void spinlock_unlock(volatile spinlock_t *spinlock) {
-    __sync_lock_release(&spinlock->lock);
-
     int irq_status = arch_disable_interrupts();
 
+    __sync_lock_release(&spinlock->lock);
+
     //Enable preemption on this cpu
-    if(riscv_cpu_inited()) get_cpu_struct()->preemptCounter--;
+    arch_cpu_decrement_preempt_counter();
 
     if(irq_status) arch_enable_interrupts();
 }

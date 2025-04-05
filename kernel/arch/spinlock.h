@@ -13,6 +13,7 @@ typedef struct {
     const char *file;
     const char *func;
     int line;
+    uint64_t cpu;
 } last_acquirer_t;
 
 typedef struct spinlock_debug {
@@ -52,7 +53,7 @@ void spinlock_unlock(volatile spinlock_t *spinlock);
 #define spinlock_try_lock(LOCK) spinlock_try_lock_debug(LOCK, __FILE__, __func__, __LINE__)
 #define spinlock_lock(LOCK) spinlock_lock_debug(LOCK, __FILE__, __func__, #LOCK, __LINE__)
 
-#define INIT_SPINLOCK() ((spinlock_t){0, (last_acquirer_t){"N/A", "N/A", 0}})
+#define INIT_SPINLOCK() ((spinlock_t){0, (last_acquirer_t){"N/A", "N/A", 0, -1}})
 
 #else
 
@@ -78,5 +79,5 @@ void arch_cpu_decrement_preempt_counter();
 
 #define spinlock_unlock_skippreempt(LOCK) ({ \
     arch_cpu_increment_preempt_counter(); \
-    spinlock_lock(LOCK); \
+    spinlock_unlock(LOCK); \
 })

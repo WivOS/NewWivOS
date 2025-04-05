@@ -112,7 +112,10 @@ $(BIN_DIR)/image.hdd: $(BIN_DIR)/wivos.elf # build-modules build-apps toolchain/
 	@rm -rf test_image loopback_dev
 
 qemu-riscv64: $(BIN_DIR)/image.hdd
-	source ~/.bashrc && qemu-system-riscv64 -cpu rv64 -m 1024M -M virt -device ramfb -device qemu-xhci -device usb-kbd --no-reboot --no-shutdown -drive if=pflash,unit=0,format=raw,file=boot/OVMF-riscv64.fd,readonly=on -drive file=$(BIN_DIR)/image.hdd,if=none,id=nvm -device nvme,serial=deadbeef,drive=nvm -serial mon:stdio
+	source ~/.bashrc && qemu-system-riscv64 -cpu rv64 -smp 4 -m 1024M -M virt -device ramfb -device qemu-xhci -device usb-kbd --no-reboot --no-shutdown -drive if=pflash,unit=0,format=raw,file=boot/OVMF-riscv64.fd,readonly=on -drive if=pflash,unit=1,format=raw,file=boot/OVMF-VARS-riscv64.fd -drive file=$(BIN_DIR)/image.hdd,if=none,id=nvm -device nvme,serial=deadbeef,drive=nvm -serial mon:stdio
+
+qemu-riscv64-dtb:
+	qemu-system-riscv64 -cpu rv64 -smp 4 -m 1024M -M virt -device ramfb -device qemu-xhci -device usb-kbd --no-reboot --no-shutdown -drive if=pflash,unit=0,format=raw,file=boot/OVMF-riscv64.fd,readonly=on -drive if=pflash,unit=1,format=raw,file=boot/OVMF-VARS-riscv64.fd -drive file=$(BIN_DIR)/image.hdd,if=none,id=nvm -device nvme,serial=deadbeef,drive=nvm -serial mon:stdio -machine dumpdtb=boot/qemu-virt.dtb
 
 qemu-x86_64: $(BIN_DIR)/image.hdd
 	source ~/.bashrc && qemu-system-x86_64 -enable-kvm -cpu host -m 1024M -M q35 -bios boot/OVMF-x86_64.fd -net none -smp 4 -drive file=$(BIN_DIR)/image.hdd,if=none,id=nvm -device nvme,serial=deadbeef,drive=nvm -debugcon stdio -device virtio-vga-gl,disable-legacy=on,xres=1280,yres=1024 -display sdl,gl=on -device qemu-xhci -device usb-kbd -device usb-tablet --no-reboot --no-shutdown

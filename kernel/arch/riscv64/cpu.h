@@ -7,6 +7,10 @@
 
 #define MAX_CPUS 256
 
+#define IPI_RESCHEDULE 1
+
+#define CPU_FLAG_TIMER (1 << 0)
+
 typedef struct {
     volatile uint64_t currentCpu;
     volatile uint64_t threadUserStack;
@@ -16,9 +20,11 @@ typedef struct {
     volatile kpid_t currentPid;
     volatile ktid_t currentTid;
     volatile ktid_t currentTaskID;
+    volatile uint8_t ipiType;
+    volatile uint8_t flags;
 } __attribute__((packed)) cpu_t;
 
-extern cpu_t CPULocals[MAX_CPUS];
+extern volatile cpu_t CPULocals[MAX_CPUS];
 
 void riscv_cpu_init();
 void set_cpu_struct(cpu_t *cpu);

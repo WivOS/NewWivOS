@@ -149,3 +149,20 @@ riscv_isr:
 
     RISCV_RESTORE_CONTEXT
     sret
+
+    .text
+    .balign 4
+    .type arch_scheduler_context_switch, @function
+    .globl arch_scheduler_context_switch
+arch_scheduler_context_switch:
+    beqz a1, .do_not_update_page_table
+    csrw satp, a1
+.do_not_update_page_table:
+    mv s0, a0
+    and sp, sp, -16
+    call arch_scheduler_unlock_locks
+    mv a0, s0
+
+    mv sp, a0
+    RISCV_RESTORE_CONTEXT
+    sret

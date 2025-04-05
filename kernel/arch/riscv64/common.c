@@ -17,8 +17,6 @@ void arch_post_vmm() {
 
     riscv_cpu_init();
     arch_interrupt_init();
-
-    while(1);
 }
 
 //TODO: This is not true

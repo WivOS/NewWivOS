@@ -9,6 +9,8 @@ void arch_cpu_decrement_preempt_counter();
 size_t arch_cpu_get_preempt_counter();
 
 size_t arch_cpu_get_index();
+size_t arch_cpu_get_count();
+size_t arch_cpu_get_maxhartid();
 
 kpid_t arch_cpu_get_current_pid();
 ktid_t arch_cpu_get_current_tid();
