@@ -24,6 +24,7 @@ typedef struct thread {
     volatile void *ustack_address;
     volatile size_t cpu_number;
     volatile spinlock_t lock;
+    volatile void *fpu_state;
     //TODO: Add a custom field for each arch
 } __attribute__((packed)) thread_t;
 

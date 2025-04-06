@@ -38,3 +38,4 @@ void process_init_process_table();
 
 kpid_t process_create(pt_t *page_table);
 process_t *process_get_process(kpid_t pid);
+process_t *process_get_process_no_lock(kpid_t pid);

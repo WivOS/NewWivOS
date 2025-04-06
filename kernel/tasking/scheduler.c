@@ -17,12 +17,8 @@ volatile spinlock_t SchedulerLock = INIT_SPINLOCK();
 volatile spinlock_t SecondSchedulerLock = INIT_SPINLOCK();
 
 void scheduler_init(void *first_task) {
-    //TODO: Save default context
-
     process_init_process_table();
     for(ktid_t i = 0; i < MAX_THREADS * 2; i++) ActiveTasks[i] = (thread_t *)NULL;
-
-    //TODO: Set irq interrupt to point to sched here
 
     process_create(KernelPageMap);
     scheduler_add_task(0, thread_create(0, thread_parameter_entry, thread_entry_data((void *)first_task, 0)));
@@ -96,7 +92,7 @@ void scheduler_schedule(irq_regs_t *regs) {
 
     if(spinlock_try_lock_skippreempt(&SchedulerLock)) {
         spinlock_unlock_skippreempt(&EntrySchedulerLock);
-        //TODO: Check if we can enable interrupts here
+        if(irq_status) arch_enable_interrupts();
         return;
     }
 
@@ -111,8 +107,8 @@ void scheduler_schedule(irq_regs_t *regs) {
         thread->saved_regs = *regs;
         thread->cpu_number = -1;
 
-        //TODO: SIMD
         if(currentPid) {
+            arch_cpu_save_fpu_state((void *)thread->fpu_state);
             thread->ustack_address = (void *)arch_cpu_get_thread_user_stack();
         }
 
@@ -129,10 +125,11 @@ void scheduler_schedule(irq_regs_t *regs) {
     arch_cpu_set_current_tid(nextTask->tid);
     arch_cpu_set_current_taskid(nextTask->taskID);
 
-    printf_scheduler("[%d] Switching pid: %d, tid: %d, taskId: %d\n", arch_cpu_get_index(), nextTask->pid, nextTask->tid, nextTask->taskID);
+    //printf_scheduler("[%d] Switching pid: %d, tid: %d, taskId: %d\n", arch_cpu_get_index(), nextTask->pid, nextTask->tid, nextTask->taskID);
 
-    //TODO: SIMD
     if(nextTask->pid != 0) {
+        arch_cpu_restore_fpu_state((void *)nextTask->fpu_state);
+
         arch_cpu_set_thread_kernel_stack((void *)nextTask->kstack_address);
         arch_cpu_set_thread_user_stack((void *)nextTask->ustack_address);
 
@@ -142,16 +139,14 @@ void scheduler_schedule(irq_regs_t *regs) {
     nextTask->cpu_number = arch_cpu_get_index();
 
     //TODO: Check NULL
-    process_t *process = process_get_process(nextTask->pid);
-    spinlock_unlock(&process->lock);
+    process_t *process = process_get_process_no_lock(nextTask->pid);
 
     //TODO: Check NULL
     process_t *currentProcess = NULL;
     if(nextTask->pid == currentPid)
         currentProcess = process;
     else if(currentPid != -1) {
-        currentProcess = process_get_process(currentPid);
-        if(currentProcess) spinlock_unlock(&currentProcess->lock);
+        currentProcess = process_get_process_no_lock(currentPid);
     }
 
     if(currentPid == -1 || process->page_table != currentProcess->page_table) {

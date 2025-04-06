@@ -23,3 +23,8 @@ void arch_cpu_set_current_tid(ktid_t ktid);
 void arch_cpu_set_current_taskid(ktid_t taskID);
 void arch_cpu_set_thread_user_stack(void *address);
 void arch_cpu_set_thread_kernel_stack(void *address);
+
+size_t arch_cpu_get_fpu_save_size();
+void arch_cpu_set_fpu_default_state(void *state);
+void arch_cpu_save_fpu_state(void *state);
+void arch_cpu_restore_fpu_state(void *state);

@@ -1,5 +1,7 @@
 #include <utils/system.h>
 
+#include <fs/vfs.h>
+
 #include <mem/pmm.h>
 #include <mem/vmm.h>
 #include <tasking/scheduler.h>
@@ -18,38 +20,35 @@ void kmain() {
 
     scheduler_init((void *)kmain_threaded);
 
-    printf("Waiting for rescheduling\n");
+    printf("[Kernel] Waiting for rescheduling\n");
 
     while(1);
 }
 
-void kmain_thread_1() {
-    printf("Thread 1\n");
-    while(1);
-}
+static volatile uint32_t threadCountTest = 0;
+void kmain_thread_test(size_t thread_number) {
+    printf("Thread %d\n", thread_number);
 
-void kmain_thread_2() {
-    printf("Thread 2\n");
-    while(1);
-}
-
-void kmain_thread_3() {
-    printf("Thread 3\n");
-    while(1);
-}
-
-void kmain_thread_4() {
-    printf("Thread 4\n");
+    locked_inc((uint32_t *)&threadCountTest);
     while(1);
 }
 
 void kmain_threaded() {
-    scheduler_add_task(0, thread_create(0, thread_parameter_entry, thread_entry_data((void *)kmain_thread_1, 0)));
-    scheduler_add_task(0, thread_create(0, thread_parameter_entry, thread_entry_data((void *)kmain_thread_2, 0)));
-    scheduler_add_task(0, thread_create(0, thread_parameter_entry, thread_entry_data((void *)kmain_thread_3, 0)));
-    scheduler_add_task(0, thread_create(0, thread_parameter_entry, thread_entry_data((void *)kmain_thread_4, 0)));
+    printf("[Kernel] Threaded phase reached\n");
 
-    printf("Reached kernel end: Work in progress\n");
+    {
+        printf("[Kernel] Testing thread creation\n");
+        #define THREAD_TEST_COUNT 4
+        for(size_t i = 0; i < THREAD_TEST_COUNT; i++) {
+            scheduler_add_task(0, thread_create(0, thread_parameter_entry, thread_entry_data((void *)kmain_thread_test, (void *)(i + 1))));
+        }
+        while(locked_read((uint32_t *)&threadCountTest) < THREAD_TEST_COUNT);
+    }
+
+    vfs_init();
+    vfs_print_tree();
+
+    printf("[Kernel] Reached kernel end: Work in progress\n");
 
     while(1);
 }

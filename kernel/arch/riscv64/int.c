@@ -112,13 +112,10 @@ static uint64_t tick_count = 0;
 static uintptr_t riscv_handle_timer_int(irq_regs_t *regs) {
     tick_count++;
 
-    if((tick_count % 1000) == 0) {
-        printf("Timer 1s elapsed, sending IPI to test\n");
-        riscv_send_ipi_to_all_harts(IPI_RESCHEDULE);
-    }
-
     last_timer_event += 10000;
     riscv_sbi_set_timer(last_timer_event); //Clear and set new event
+
+    riscv_send_ipi_to_all_harts(IPI_RESCHEDULE);
 
     return (uintptr_t)regs;
 }

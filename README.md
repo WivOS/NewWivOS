@@ -13,7 +13,9 @@ This is a rewrite from the newest WivOS dev branch to support both x86_64 and ri
 - [ ] Interrupts (x86_64)
 - [x] Processes/Threads (riscv64)
 - [ ] Processes/Threads (x86_64)
-- [ ] Scheduler (riscv64 & x86_64)
+- [x] Scheduler (riscv64)
+- [ ] Scheduler (x86_64)
+- [x] VFS & DevFS
 
 ## x86_64 features
 

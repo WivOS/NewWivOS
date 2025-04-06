@@ -62,3 +62,15 @@ process_t *process_get_process(kpid_t pid) {
 
     return process;
 }
+
+process_t *process_get_process_no_lock(kpid_t pid) {
+    if(pid >= MAX_PROCESSES) return NULL;
+
+    spinlock_lock(&process_lock);
+
+    process_t *process = ProcessTable[pid];
+
+    spinlock_unlock(&process_lock);
+
+    return process;
+}

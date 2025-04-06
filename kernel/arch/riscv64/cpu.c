@@ -3,6 +3,8 @@
 #include <arch/riscv64/cpu.h>
 #include <arch/riscv64/defines.h>
 
+#include <utils/ctype.h>
+#include <utils/dtb.h>
 #include <utils/system.h>
 
 volatile cpu_t CPULocals[MAX_CPUS];
@@ -14,6 +16,20 @@ struct stack_t {
 };
 static struct stack_t CPUStacks[MAX_CPUS] __attribute__((aligned(PAGE_SIZE)));
 
+static size_t save_size = 0;
+static void fpu_init() {
+    uint32_t register_width = 0;
+    if(get_cpu_struct()->isaFeatures & RISCV_FEATURE_DOUBLE_FP)
+        register_width = 8;
+    else if(get_cpu_struct()->isaFeatures & RISCV_FEATURE_SINGLE_FP)
+        register_width = 4;
+
+    if(!register_width) return;
+
+    save_size = (register_width * 32) + 4;
+
+    csr_write("sstatus", csr_read("sstatus") | (1 << 13));
+}
 
 static volatile uint32_t cpu_count = 0;
 static void init_cpu(uint64_t hartid) {
@@ -26,6 +42,20 @@ static void init_cpu(uint64_t hartid) {
     CPULocals[cpu_count].currentTaskID = -1;
     CPULocals[cpu_count].flags = 0;
     //TODO: User stack
+
+    dtb_node_t *plic_node = dtb_find_node("/cpus/cpu", 0, 0);
+    if(plic_node != NULL) {
+        char *isa = dtb_prop_read_string(plic_node, "riscv,isa");
+        if(plic_node != NULL) {
+            isa += 4;
+            while(*isa) {
+                if(!isalpha(*isa)) break;
+                int bit = *isa - 'a';
+                CPULocals[cpu_count].isaFeatures |= (1 << bit);
+                isa++;
+            }
+        }
+    }
 
     cpu_count++;
 }
@@ -49,6 +79,8 @@ void riscv_smp_entry(struct limine_mp_riscv64_info *info) {
         }
     }
 
+    fpu_init();
+
     arch_interrupt_init_smp(); //TODO: Maybe wait for BSP Hart to setup interrupt things
 
     __atomic_fetch_add(&ctr, 1, __ATOMIC_SEQ_CST);
@@ -66,6 +98,8 @@ void riscv_cpu_init() {
     init_cpu(mp_response->bsp_hartid);
     CPULocals[0].flags = CPU_FLAG_TIMER;
     set_cpu_struct((cpu_t *)&CPULocals[0]);
+
+    fpu_init();
 
     printf("[CPU] Inited %d\n", mp_response->bsp_hartid);
 
@@ -157,4 +191,31 @@ void arch_cpu_set_thread_user_stack(void *address) {
 
 void arch_cpu_set_thread_kernel_stack(void *address) {
     if(riscv_cpu_inited()) get_cpu_struct()->threadKernelStack = (uint64_t)address;
+}
+
+size_t arch_cpu_get_fpu_save_size() {
+    return save_size;
+}
+
+void arch_cpu_set_fpu_default_state(void *state) {
+    (void)state;
+}
+
+extern void riscv_save_fpu_double(void *state);
+extern void riscv_save_fpu_single(void *state);
+extern void riscv_restore_fpu_double(void *state);
+extern void riscv_restore_fpu_single(void *state);
+
+void arch_cpu_save_fpu_state(void *state) {
+    if(get_cpu_struct()->isaFeatures & RISCV_FEATURE_DOUBLE_FP)
+        riscv_save_fpu_double(state);
+    else if(get_cpu_struct()->isaFeatures & RISCV_FEATURE_SINGLE_FP)
+        riscv_save_fpu_single(state);
+}
+
+void arch_cpu_restore_fpu_state(void *state) {
+    if(get_cpu_struct()->isaFeatures & RISCV_FEATURE_DOUBLE_FP)
+        riscv_restore_fpu_double(state);
+    else if(get_cpu_struct()->isaFeatures & RISCV_FEATURE_SINGLE_FP)
+        riscv_restore_fpu_single(state);
 }

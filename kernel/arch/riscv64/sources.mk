@@ -9,5 +9,6 @@ SRCS += kernel/arch/riscv64/spinlock.c
 SRCS += kernel/arch/riscv64/thread.c
 SRCS += kernel/arch/riscv64/vmm.c
 
+SRCS += kernel/arch/riscv64/fpu_state.S
 SRCS += kernel/arch/riscv64/general.S
 SRCS += kernel/arch/riscv64/isr.S

@@ -1,6 +1,7 @@
 #include <tasking/thread.h>
 #include <tasking/process.h>
 #include <arch/thread.h>
+#include <arch/cpu.h>
 
 #include <mem/alloc.h>
 #include <mem/pmm.h>
@@ -45,6 +46,10 @@ done: (void)tid;
     if(!pid) {
         stack = (void *)newThread->kstack_address;
     } else {
+        newThread->fpu_state = (void *)kmalloc(arch_cpu_get_fpu_save_size());
+        memset((void *)newThread->fpu_state, 0, arch_cpu_get_fpu_save_size());
+        arch_cpu_set_fpu_default_state((void *)newThread->fpu_state);
+
         size_t stackGuardPage = STACK_LOCATION_TOP - (STACK_SIZE + STACK_GUARD_SIZE) * (tid + 1);
         size_t stackBottom = stackGuardPage + STACK_GUARD_SIZE;
 
@@ -63,7 +68,6 @@ done: (void)tid;
 
         stack = (void *)(stackBottom + STACK_SIZE - ((sbase - sp) * sizeof(size_t)));
     }
-    printf("%llX\n", stack);
     arch_thread_set_stack(newThread, stack);
 
     process->threads[tid] = newThread;

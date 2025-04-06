@@ -3,6 +3,9 @@ SRCS += kernel/kmain.c
 
 SRCS += kernel/boot/limine.c
 
+SRCS += kernel/fs/devfs/devfs.c
+SRCS += kernel/fs/vfs.c
+
 SRCS += kernel/mem/alloc.c
 SRCS += kernel/mem/pmm.c
 SRCS += kernel/mem/vmm.c
